@@ -1,0 +1,27 @@
+{
+  "name": "function-create-media-job",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "build": "tsc",
+    "prebuild": "npm --depth 999 update",
+    "watch": "tsc -w",
+    "prestart": "npm run build",
+    "start": "func start --verbose",
+    "test": "echo \"No tests yet...\""
+  },
+  "dependencies": {
+    "@azure/arm-mediaservices": "^8.1.0",
+    "@azure/ms-rest-nodeauth": "^3.0.10",
+    "@azure/storage-blob": "^12.6.0",
+    "uuid": "^8.3.2"
+  },
+  "devDependencies": {
+    "@azure/functions": "^1.2.3",
+    "@typescript-eslint/eslint-plugin": "^4.27.0",
+    "@typescript-eslint/parser": "^4.27.0",
+    "dotenv-safe": "^8.2.0",
+    "eslint": "^7.28.0",
+    "typescript": "^4.3.2"
+  }
+}

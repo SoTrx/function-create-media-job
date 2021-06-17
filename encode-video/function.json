@@ -1,0 +1,12 @@
+{
+  "bindings": [
+    {
+      "name": "myBlob",
+      "type": "blobTrigger",
+      "direction": "in",
+      "path": "inputs/{name}",
+      "connection": "videossharingscontainer_STORAGE"
+    }
+  ],
+  "scriptFile": "../dist/encode-video/index.js"
+}
