@@ -62,6 +62,7 @@ export default async function blobTrigger(
       resourceGroup: rg,
       storageAccount: storageAccountName,
     };
+
     // Set the incoming blob as our source
     await client.setInput(
       context.bindingData.name,
@@ -73,8 +74,8 @@ export default async function blobTrigger(
     const outputAssetName = `${context.bindingData.name}-${uuid}`;
     const jobName = `job-${uuid}`;
     // Set the target in another container.
-    // @Note : Az media services is limited to one asset per container.
-    // Using another encoding method (FFMPEG VM ?) this shouldn't apply
+    // @Note : Az media services is limited to one asset per container, hence using uuid
+    // Using another encoding method (FFMPEG VM ?) this limitation shouldn't apply
     await client.setOutput(
       outputAssetName,
       Object.assign(storageAccount, { container: outputContainer })

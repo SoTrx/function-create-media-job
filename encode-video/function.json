@@ -4,7 +4,7 @@
       "name": "myBlob",
       "type": "blobTrigger",
       "direction": "in",
-      "path": "inputs/{name}",
+      "path": "%INPUT_CONTAINER%/{name}",
       "connection": "videossharingscontainer_STORAGE"
     }
   ],

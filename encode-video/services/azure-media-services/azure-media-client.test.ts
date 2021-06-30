@@ -43,7 +43,7 @@ describe("Using Azure Media Services", () => {
     // Finally, setting NODE_ENV to prod, enabling the container to resolves media services
     env.NODE_ENV = "production";
   });
-  
+
   // Reset the client after each test
   beforeEach(() => {
     azClient = container.get(TYPES.Media);

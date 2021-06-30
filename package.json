@@ -8,6 +8,9 @@
     "watch": "tsc -w",
     "prestart": "npm run build",
     "start": "func start --verbose",
+    "prepack": "npx shx rm -rf dist node_modules && npm install && npm run build && npm prune --production --force",
+    "pack": "tar --exclude-from=.funcignore -a -c -f out.zip .",
+    "postpack": "npm install",
     "test": "jest",
     "test:coverage": "jest --coverage"
   },

@@ -2,7 +2,6 @@
  * NO-OP implementation of a Media Client. Doesn't do anything.
  */
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { injectable } from "inversify";
 import {
   IContainerOptions,
   ILoginCredentials,
@@ -10,7 +9,6 @@ import {
   IStorageAccountOptions,
 } from "../../@types/media-client";
 
-@injectable()
 export class MockMediaClient implements IMediaClient {
   async setOutput(
     name: string,
