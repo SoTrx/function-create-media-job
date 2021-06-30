@@ -92,3 +92,10 @@ bin
 obj
 appsettings.json
 local.settings.json
+*.bicep
+deploy-by-code.json
+.vscode
+__*storage__
+__azurite*
+*.zip
+.vscode

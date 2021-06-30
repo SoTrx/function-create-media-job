@@ -1,0 +1,231 @@
+import {
+  AzureLoginProvider,
+  IAzLoginCredentials,
+  IContainerOptions,
+  ILoginCredentials,
+  IMediaClient,
+  IStorageAccountOptions,
+} from "../../@types/media-client";
+import { AzureMediaServices } from "@azure/arm-mediaservices";
+import {
+  AssetsCreateOrUpdateResponse,
+  BuiltInStandardEncoderPreset,
+  JobInputUnion,
+  JobOutputAsset,
+  TransformsCreateOrUpdateResponse,
+} from "@azure/arm-mediaservices/esm/models";
+import { inject, injectable } from "inversify";
+import TYPES from "../../types";
+
+interface Job {
+  input: JobInputUnion;
+  outputs: JobOutputAsset[];
+  encodingPreset: TransformsCreateOrUpdateResponse;
+}
+
+@injectable()
+export class AzureMediaClient implements IMediaClient {
+  private azMediaClient: AzureMediaServices;
+  private options: IAzLoginCredentials;
+  private job: Job = {
+    input: undefined,
+    outputs: undefined,
+    encodingPreset: undefined,
+  };
+  private static readonly DEFAULT_ENCODING_PRESET: BuiltInStandardEncoderPreset =
+    {
+      odatatype: "#Microsoft.Media.BuiltInStandardEncoderPreset",
+      presetName: "ContentAwareEncoding",
+    };
+
+  constructor(
+    @inject(TYPES.AzureMediaServices)
+    private AzureMediaServices: (...args) => AzureMediaServices,
+    @inject(TYPES.AzureLoginProvider)
+    private azureLoginProvider: AzureLoginProvider
+  ) {}
+
+  /**
+   * Create a media service client.
+   * /!\ Must be called before any other method /!\
+   * @param options
+   */
+  async login<T extends ILoginCredentials>(options: T): Promise<IMediaClient> {
+    this.options = options as unknown as IAzLoginCredentials;
+    const credentials = await this.azureLoginProvider(
+      this.options.clientId,
+      this.options.secret,
+      this.options.tenant
+    );
+    this.azMediaClient = this.AzureMediaServices(
+      credentials,
+      this.options.subId
+    );
+    return this;
+  }
+
+  /**
+   * Select a file in an Azure Storage container, create an asset from it
+   * and set it as an input for the current job
+   * @param name name of the file in the storage container
+   * @param container container info
+   */
+  async setInput(
+    name: string,
+    container: IContainerOptions
+  ): Promise<IMediaClient> {
+    if (!this.azMediaClient) throw new Error("Not logged in !");
+    const inputAsset = await this.createAsset(name, container);
+    this.job.input = {
+      odatatype: "#Microsoft.Media.JobInputAsset",
+      assetName: inputAsset.name,
+    };
+    return this;
+  }
+
+  /**
+   * Select a file in an Azure Storage container, create an asset from it
+   * and set it as an output for the current job
+   * @param name name of the file in the storage container
+   * @param container container info
+   */
+  async setOutput(
+    name: string,
+    container: IContainerOptions
+  ): Promise<IMediaClient> {
+    if (!this.azMediaClient) throw new Error("Not logged in !");
+    const outputAsset = await this.createAsset(name, container);
+    this.job.outputs = [
+      {
+        odatatype: "#Microsoft.Media.JobOutputAsset",
+        assetName: outputAsset.name,
+      },
+    ];
+    return this;
+  }
+
+  /**
+   * Set the encoding preset to use for the job. If not presetDefinition is provided, the adaptive streaming default is used.
+   * @param name name of the preset. This unique name ill allow to retrieve the preset from media services
+   * @param storageAccount storage account options
+   * @param presetDefinition Definition of a preset. Although generic, this should be an BuiltInStandardEncoderPreset.
+   *
+   */
+  async setEncodingPreset<T>(
+    name: string,
+    storageAccount: IStorageAccountOptions,
+    presetDefinition?: T
+  ): Promise<IMediaClient> {
+    if (!this.azMediaClient) throw new Error("Not logged in !");
+
+    // Attempt to fetch existing preset by name
+    this.job.encodingPreset = await this.azMediaClient.transforms.get(
+      storageAccount.resourceGroup,
+      storageAccount.storageAccount,
+      name
+    );
+    // And if it doesn't exists yet, create it
+    if (!this.job.encodingPreset.id)
+      this.job.encodingPreset = await this.createNewEncodingPreset(
+        name,
+        storageAccount,
+        presetDefinition as unknown as BuiltInStandardEncoderPreset
+      );
+    return this;
+  }
+
+  /**
+   * Send the job to Azure Media Services, starting the encoding process.
+   * @param jobName name of the job to use. Must be unique
+   * @param storageAccount storage account options
+   */
+  async submitJob(
+    jobName: string,
+    storageAccount: IStorageAccountOptions
+  ): Promise<IMediaClient> {
+    const missingProps = Object.keys(this.job).filter(
+      (key) => this.job[key] === undefined
+    );
+    if (missingProps.length > 0)
+      throw new Error(
+        `These properties must be defined before submitting the job : ${missingProps.join(
+          ", "
+        )} !`
+      );
+    await this.azMediaClient.jobs.create(
+      storageAccount.resourceGroup,
+      storageAccount.storageAccount,
+      this.job.encodingPreset.name,
+      jobName,
+      {
+        input: this.job.input,
+        outputs: this.job.outputs,
+      }
+    );
+    return this;
+  }
+
+  /**
+   * Creates a new "Transform", an encoding preset, declared once and usable multiple times
+   * @param name name of the transform to create
+   * @param storageAccount storage account options
+   * @param presetDefinition Either a Microsoft provided preset or a custom one
+   * @see  https://docs.microsoft.com/fr-fr/rest/api/media/transforms/list
+   * @returns created transform
+   */
+  private async createNewEncodingPreset(
+    name: string,
+    storageAccount: IStorageAccountOptions,
+    presetDefinition = AzureMediaClient.DEFAULT_ENCODING_PRESET
+  ): Promise<TransformsCreateOrUpdateResponse> {
+    const preset = await this.azMediaClient.transforms.createOrUpdate(
+      storageAccount.resourceGroup,
+      storageAccount.storageAccount,
+      name,
+      {
+        name: name,
+        outputs: [
+          {
+            preset: presetDefinition,
+          },
+        ],
+      }
+    );
+    if (!preset.id)
+      throw new Error(
+        `Could not create encoding preset with name ${name} and container ${JSON.stringify(
+          storageAccount
+        )}`
+      );
+    return preset;
+  }
+
+  /**
+   * Creates an Azure Media Service asset from a file in a storage container.
+   * All files processed by Az media services, including inputs,
+   * must be first converted into assets.
+   * @param name name of the file in the storage container
+   * @param container container info
+   * @returns
+   */
+  private async createAsset(
+    name: string,
+    container: IContainerOptions
+  ): Promise<AssetsCreateOrUpdateResponse> {
+    const asset = await this.azMediaClient.assets.createOrUpdate(
+      container.resourceGroup,
+      container.storageAccount,
+      name,
+      {
+        container: container.container,
+      }
+    );
+    if (!asset.name)
+      throw new Error(
+        `Could not create asset ${name} in container ${JSON.stringify(
+          container
+        )}`
+      );
+    return asset;
+  }
+}
