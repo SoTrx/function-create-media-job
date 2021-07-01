@@ -15,14 +15,15 @@ You can also choose to deploy the function manually. To do that, you must first 
 
 ## Usage
 
-After going through the [configuration](#configuration) step, drop a file in the chosen container. This will start the encoding process and drop the result into a brand new container (`vid-[uuid]`) in the same storage account. 
+After going through the [configuration](#configuration) step, drop a file in the chosen container. This will start the encoding process and drop the result into a brand new container (`vid-[uuid]`) in the same storage account.
 
 Be aware that there can only be **one asset per container** (see [workflow](#azure-media-services-workflow)) while working with media services. Thus, an output container cannot be used twice, hence the uuid in the output container name.
 
-### Limitation
-The same "one asset per container" policy also applies to input assets. This means that trying to execute two parallels instances of this function will fail. The first will run ok, the second will fail because there can't be two assets in an input container.
+### Limitation and workaround
 
-This limitation should be lifted by moving the input file to another container before turning it to an asset. I'll do just this some time later.
+The same "one asset per container" policy also applies to input assets. This means that trying to execute two parallels instances of this function will fail. The first will run ok, the second will fail because there can't be two assets in the input container.
+
+The workaround used to bypass this limitation is to move the incoming file to a new storage container before turning it to an asset. However, this means that we must be able to move around files in the storage container. This is not something Azure Media Services is capable from the get go, so another library ([@azure/storage-blob](https://www.npmjs.com/package/@azure/storage-blob)) is used for this purpose. This is why an additional storage-account wise connection string must be provided. 
 
 ### Azure Media Services workflow
 
@@ -30,9 +31,16 @@ This limitation should be lifted by moving the input file to another container b
 
 The part of Azure Media Services that is used by this function is fairly simple.
 
-Media Services can only use **assets**.
+Media Services mainly works with assets. An encoding process can be represented like this :
 
-/!\WIP/!\
+```
+                                         api                 transform
+                            SRC_FILE -----------> SRC_ASSET -----------> DST_ASSET
+```
+
+An input file must be turned into an asset before being processed.
+
+A transform is a set of encoding parameters (in a FFMPEG kind of way) Applying a transform on an asset generates a new modified asset.
 
 For more details, here's the [documentation](https://docs.microsoft.com/en-us/azure/media-services/latest/transform-jobs-concept)
 
@@ -52,8 +60,9 @@ First are the variables needed to access the Azure Media Services API. You can f
 Next are the variables added by the function itself :
 
 - **INPUT_CONTAINER** : The storage account container to watch for new incoming files. Adding a new file to this container will launch a new encoding process.
-- **TRANSFORM_NAME** : The encoding preset name to use to encode the files. If there isn't any preset associated with **TRANSFORM_NAME**, it will be created using the *CONTENTAWAREENCODING* default preset.
+- **TRANSFORM_NAME** : The encoding preset name to use to encode the files. If there isn't any preset associated with **TRANSFORM_NAME**, it will be created using the _CONTENTAWAREENCODING_ default preset.
 - **NODE_ENV** : Set it to **production**. Any other value would result in the function using a mock instead of Azure Media Services.
+- **ACCOUNT_CONNECTION_STRING** : READ/WRITE/DELETE Access to the whole storage account. You can generate one in the "Shared access signature" section of the Storage account page in the portal. This is needed for the workaround explained [here](#limitation-and-workaround). This tring must begin with `BlobEndpoint=`
 
 See [application settings documentation](https://docs.microsoft.com/en-us/azure/azure-functions/functions-how-to-use-azure-function-app-settings#settings) for more details.
 
@@ -76,5 +85,5 @@ See [application settings documentation](https://docs.microsoft.com/en-us/azure/
 
 Two types of tests are included :
 
-- *.test.ts files are for unit testing, included in the coverage
-- *.e2e.test.ts files are using production resources. Thus, running them may have a (significant) cost. This is why, these are skipped by default and excluded from the coverage report. You will also need your own _localsettings.json_.
+- \*.test.ts files are for unit testing, included in the coverage
+- \*.e2e.test.ts files are using production resources. Thus, running them may have a (significant) cost. This is why, these are skipped by default and excluded from the coverage report. You will also need your own _localsettings.json_.

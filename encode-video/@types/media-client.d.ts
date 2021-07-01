@@ -1,4 +1,5 @@
 import type { ApplicationTokenCredentials } from "@azure/ms-rest-nodeauth";
+import { BlobServiceClient } from "@azure/storage-blob";
 
 /** Generic login interface, must be extended for every implementation */
 export type AzureLoginProvider = (
@@ -6,6 +7,11 @@ export type AzureLoginProvider = (
   secret: string,
   tenant: string
 ) => Promise<ApplicationTokenCredentials>;
+
+/** Definition of a constructor of an Azure BlobServiceClient */
+export type AzureBlobClientFactory = (
+  connectionString: string
+) => BlobServiceClient;
 
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
 export interface ILoginCredentials {}
@@ -31,6 +37,8 @@ export interface IStorageAccountOptions {
   resourceGroup: string;
   /** Storage account name the container is into */
   storageAccount: string;
+  /** Read/Write/Delete SAS URL */
+  sasUrl: string;
 }
 /** Definition of a storage account container */
 export interface IContainerOptions extends IStorageAccountOptions {

@@ -1,9 +1,15 @@
 import { AzureMediaServices } from "@azure/arm-mediaservices";
 import { Container, interfaces } from "inversify";
-import { AzureLoginProvider, IMediaClient } from "./@types/media-client";
+import {
+  AzureLoginProvider,
+  AzureBlobClientFactory,
+  IMediaClient,
+} from "./@types/media-client";
 import { AzureMediaClient } from "./services/azure-media-services/azure-media-client.service";
 import { MockMediaClient } from "./services/mocks/mock-media-client";
 import { loginWithServicePrincipalSecret } from "@azure/ms-rest-nodeauth";
+import { BlobServiceClient } from "@azure/storage-blob";
+
 import TYPES from "./types";
 
 const container = new Container();
@@ -13,6 +19,11 @@ const container = new Container();
 container
   .bind<AzureLoginProvider>(TYPES.AzureLoginProvider)
   .toConstantValue(loginWithServicePrincipalSecret);
+
+// Ditto with Blob service
+container
+  .bind<AzureBlobClientFactory>(TYPES.AzureBlobServices)
+  .toConstantValue(BlobServiceClient.fromConnectionString);
 
 container
   .bind<interfaces.Factory<AzureMediaServices>>(TYPES.AzureMediaServices)
@@ -28,7 +39,8 @@ container
     process.env.NODE_ENV === "production"
       ? new AzureMediaClient(
           context.container.get(TYPES.AzureMediaServices),
-          context.container.get(TYPES.AzureLoginProvider)
+          context.container.get(TYPES.AzureLoginProvider),
+          context.container.get(TYPES.AzureBlobServices)
         )
       : new MockMediaClient()
   );

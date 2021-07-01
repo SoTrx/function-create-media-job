@@ -1,5 +1,6 @@
 import {
   AzureLoginProvider,
+  AzureBlobClientFactory,
   IAzLoginCredentials,
   IContainerOptions,
   ILoginCredentials,
@@ -14,6 +15,7 @@ import {
   JobOutputAsset,
   TransformsCreateOrUpdateResponse,
 } from "@azure/arm-mediaservices/esm/models";
+import { v4 as uuidv4 } from "uuid";
 import { inject, injectable } from "inversify";
 import TYPES from "../../types";
 
@@ -26,6 +28,7 @@ interface Job {
 @injectable()
 export class AzureMediaClient implements IMediaClient {
   private azMediaClient: AzureMediaServices;
+  private azBlobClient;
   private options: IAzLoginCredentials;
   private job: Job = {
     input: undefined,
@@ -42,7 +45,9 @@ export class AzureMediaClient implements IMediaClient {
     @inject(TYPES.AzureMediaServices)
     private AzureMediaServices: (...args) => AzureMediaServices,
     @inject(TYPES.AzureLoginProvider)
-    private azureLoginProvider: AzureLoginProvider
+    private azureLoginProvider: AzureLoginProvider,
+    @inject(TYPES.AzureBlobServices)
+    private azBlobProvider: AzureBlobClientFactory
   ) {}
 
   /**
@@ -65,8 +70,8 @@ export class AzureMediaClient implements IMediaClient {
   }
 
   /**
-   * Select a file in an Azure Storage container, create an asset from it
-   * and set it as an input for the current job
+   * Select a file in an Azure Storage container, copy it to a temp container,
+   * create an asset from it and set it as an input for the current job
    * @param name name of the file in the storage container
    * @param container container info
    */
@@ -75,7 +80,15 @@ export class AzureMediaClient implements IMediaClient {
     container: IContainerOptions
   ): Promise<IMediaClient> {
     if (!this.azMediaClient) throw new Error("Not logged in !");
-    const inputAsset = await this.createAsset(name, container);
+    // Azure Media Services only supports ONE asset per container
+    // An asset must be alive through the whole encoding process
+    // If we didn't copy the file to another temp container,
+    // executing two jobs in parallel will fail
+    const tmpContainerName = await this.moveToTempContainer(name, container);
+    const inputAsset = await this.createAsset(
+      name,
+      Object.assign(container, { container: tmpContainerName })
+    );
     this.job.input = {
       odatatype: "#Microsoft.Media.JobInputAsset",
       assetName: inputAsset.name,
@@ -125,7 +138,7 @@ export class AzureMediaClient implements IMediaClient {
       name
     );
     // And if it doesn't exists yet, create it
-    if (!this.job.encodingPreset.id)
+    if (!this.job.encodingPreset?.id)
       this.job.encodingPreset = await this.createNewEncodingPreset(
         name,
         storageAccount,
@@ -227,5 +240,28 @@ export class AzureMediaClient implements IMediaClient {
         )}`
       );
     return asset;
+  }
+
+  /**
+   * Copy a blob to a new temporary container
+   * @param blobName blob name to copy
+   * @param container container infos
+   * @returns name of the temp container
+   */
+  public async moveToTempContainer(
+    blobName: string,
+    container: IContainerOptions
+  ): Promise<string> {
+    const tempContainer = `tmp-${uuidv4()}`;
+    const blobServClient = this.azBlobProvider(container.sasUrl);
+    const srcCtnClient = blobServClient.getContainerClient(container.container);
+    const cpyCtnClient = blobServClient.getContainerClient(tempContainer);
+    await cpyCtnClient.create();
+    const srcBlobClient = srcCtnClient.getBlobClient(blobName);
+    const destBlobClient = cpyCtnClient.getBlobClient(blobName);
+    const copyThread = await destBlobClient.beginCopyFromURL(srcBlobClient.url);
+    await copyThread.pollUntilDone();
+    await srcBlobClient.deleteIfExists();
+    return tempContainer;
   }
 }

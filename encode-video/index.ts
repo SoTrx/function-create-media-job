@@ -35,6 +35,7 @@ export default async function blobTrigger(
       storageAccountName,
       inputContainer,
       transformName,
+      sasUrl,
     ] = [
       "AAD_CLIENT_ID",
       "AAD_SECRET",
@@ -44,6 +45,7 @@ export default async function blobTrigger(
       "ACCOUNT_NAME",
       "INPUT_CONTAINER",
       "TRANSFORM_NAME",
+      "ACCOUNT_CONNECTION_STRING",
     ].map((env) => getEnvVar<string>(env, context));
 
     // As there is no true "root" for our DI, we can allow a bit of a service locator anti-pattern.
@@ -61,6 +63,7 @@ export default async function blobTrigger(
     const storageAccount: IStorageAccountOptions = {
       resourceGroup: rg,
       storageAccount: storageAccountName,
+      sasUrl: sasUrl,
     };
 
     // Set the incoming blob as our source

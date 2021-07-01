@@ -28,6 +28,7 @@ describe("Using mock media services", () => {
       RESOURCE_GROUP: "test",
       ACCOUNT_NAME: "test",
       INPUT_CONTAINER: "test",
+      ACCOUNT_CONNECTION_STRING: "test",
     },
   };
   beforeAll(() => {

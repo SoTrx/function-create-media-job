@@ -26,7 +26,7 @@ describe.skip("Using Azure Media Services in real condition", () => {
   // Load actual env variables from local.settings.json
   beforeAll(() => {
     const localSettings = JSON.parse(
-      readFileSync(join(__dirname, "../../local.settings.json"), {
+      readFileSync(join(__dirname, "../../../local.settings.json"), {
         encoding: "utf-8",
       })
     );
@@ -45,6 +45,7 @@ describe.skip("Using Azure Media Services in real condition", () => {
     storageAccount = {
       resourceGroup: env.RESOURCE_GROUP,
       storageAccount: env.ACCOUNT_NAME,
+      sasUrl: env.ACCOUNT_SAS_URL,
     };
   });
   // Reset the client between each test

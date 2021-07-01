@@ -1,11 +1,12 @@
 import "reflect-metadata";
 import { AzureMediaServices } from "@azure/arm-mediaservices";
-import Substitute from "@fluffy-spoon/substitute";
+import { Substitute, Arg } from "@fluffy-spoon/substitute";
 import { env } from "process";
 import { IAzLoginCredentials } from "../../@types/media-client";
 import container from "../../container";
 import TYPES from "../../types";
 import { AzureMediaClient } from "./azure-media-client.service";
+import { BlobServiceClient } from "@azure/storage-blob";
 /**
  * Testing out the Azure Media Client Service.
  * As this is more or less sugar coating of the original API, this shouldn't be too exhaustive.
@@ -21,6 +22,7 @@ describe("Using Azure Media Services", () => {
     resourceGroup: "test",
     container: "test",
     storageAccount: "test",
+    sasUrl: "test",
   };
   let azClient: AzureMediaClient;
   // To test things out, we shouldn't have to use any Azure resource.
@@ -33,6 +35,12 @@ describe("Using Azure Media Services", () => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const nullAuth = async (..._args: string[]) => Promise.resolve(undefined);
     container.rebind(TYPES.AzureLoginProvider).toConstantValue(nullAuth);
+
+    // De-activating Azure blob services, replacing it by a mock
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const nullBlob = (..._args: string[]) =>
+      Substitute.for<BlobServiceClient>();
+    container.rebind(TYPES.AzureBlobServices).toConstantValue(nullBlob);
 
     // Not letting the class use the actual Media Services.
     // This prevents unnecessary costs
@@ -71,6 +79,31 @@ describe("Using Azure Media Services", () => {
   it("Should be able to create an asset", async () => {
     await azClient.login(loginOptions);
     await azClient.setInput("test", testContainerOptions);
+  });
+
+  describe("Creating a new transform", () => {
+    beforeAll(() => {
+      const asm = Substitute.for<AzureMediaServices>();
+      (asm.transforms as any).returns({
+        // Ensuring the transform cannot be retrieved, triggering a transform creation
+        get: async (...args) => Promise.resolve(undefined),
+        // Ensuring any transform can be "created"
+        createOrUpdate: async (...args) => Promise.resolve({ id: "test" }),
+      });
+
+      container.rebind(TYPES.AzureMediaServices).toFactory(() => () => asm);
+    });
+
+    // Return to a normal case
+    afterAll(() => {
+      container
+        .rebind(TYPES.AzureMediaServices)
+        .toFactory(() => () => Substitute.for<AzureMediaServices>());
+    });
+    it("Should be able to create a transform", async () => {
+      await azClient.login(loginOptions);
+      await azClient.setEncodingPreset("test", testContainerOptions);
+    });
   });
 
   it("Should be able to submit a job", async () => {
