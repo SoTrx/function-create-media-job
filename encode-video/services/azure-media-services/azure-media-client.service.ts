@@ -38,7 +38,7 @@ export class AzureMediaClient implements IMediaClient {
   private static readonly DEFAULT_ENCODING_PRESET: BuiltInStandardEncoderPreset =
     {
       odatatype: "#Microsoft.Media.BuiltInStandardEncoderPreset",
-      presetName: "ContentAwareEncoding",
+      presetName: "AdaptiveStreaming",
     };
 
   constructor(
