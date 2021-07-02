@@ -1,7 +1,6 @@
 import "reflect-metadata";
 import { Context } from "@azure/functions";
 import { v4 as uuidv4 } from "uuid";
-import { env } from "process";
 import container from "./container";
 import {
   IAzLoginCredentials,

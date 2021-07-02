@@ -55,11 +55,14 @@ function formatBlobContext(
 ): [Context, { length: number }] {
   // Mocking the incoming blob
   const myBlob = Substitute.for<{ length: number }>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (myBlob as any).returns({ length: blobSize });
 
   // Mocking the context, especially overriding the storage binding
   const context = Substitute.for<Context>();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (context.bindings as any).returns({ storage: undefined });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (context.bindingData as any).returns({ name: blobName });
 
   return [context, myBlob];
