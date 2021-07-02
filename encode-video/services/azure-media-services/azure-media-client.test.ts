@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { AzureMediaServices } from "@azure/arm-mediaservices";
-import { Substitute, Arg } from "@fluffy-spoon/substitute";
+import { Substitute } from "@fluffy-spoon/substitute";
 import { env } from "process";
 import { IAzLoginCredentials } from "../../@types/media-client";
 import container from "../../container";
@@ -84,11 +84,12 @@ describe("Using Azure Media Services", () => {
   describe("Creating a new transform", () => {
     beforeAll(() => {
       const asm = Substitute.for<AzureMediaServices>();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (asm.transforms as any).returns({
         // Ensuring the transform cannot be retrieved, triggering a transform creation
-        get: async (...args) => Promise.resolve(undefined),
+        get: async () => Promise.resolve(undefined),
         // Ensuring any transform can be "created"
-        createOrUpdate: async (...args) => Promise.resolve({ id: "test" }),
+        createOrUpdate: async () => Promise.resolve({ id: "test" }),
       });
 
       container.rebind(TYPES.AzureMediaServices).toFactory(() => () => asm);
