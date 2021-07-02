@@ -26,9 +26,10 @@ describe("Using mock media services", () => {
       SUBSCRIPTION_ID: "test",
       TRANSFORM_NAME: "test",
       RESOURCE_GROUP: "test",
-      ACCOUNT_NAME: "test",
+      MEDIA_SERVICES_NAME: "test",
       INPUT_CONTAINER: "test",
-      ACCOUNT_CONNECTION_STRING: "test",
+      STORAGE_CONNECTION_STRING: "test",
+      OUTPUT_CONTAINER_PREFIX: "test",
     },
   };
   beforeAll(() => {
