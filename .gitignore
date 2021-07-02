@@ -99,3 +99,4 @@ __*storage__
 __azurite*
 *.zip
 .vscode
+*.sh

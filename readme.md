@@ -1,17 +1,22 @@
 # Create media job
 
 [![codecov](https://codecov.io/gh/SoTrx/function-create-media-job/branch/master/graph/badge.svg?token=I6ZVGPI3BJ)](https://codecov.io/gh/SoTrx/function-create-media-job)
+[![Deploy to Azure](https://img.shields.io/badge/Deploy%20To-Azure-blue?logo=microsoft-azure)](https://portal.azure.com/?WT.mc_id=dotnet-0000-frbouche#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FSoTrx%2Ffunction-create-media-job%2Fmaster%2Fdeploy.json)
 
 This Azure function triggers an encoding task each time a file is added to a specific storage container.
 
 ## Installation
 
-(WIP) ~~The **deploy to Azure button** above will deploy a Node 14 linux functionApp with its associated storage container and application insight. The code will be deployed from GH directly. All the necessary environment variables are set, this should work out of the box.~~
+The **deploy to Azure button** above will deploy a Node 14 linux functionApp with its associated storage container and application insight. The code will be deployed from GH directly.
+
+**Important:** Event when deploying using this method, you will have to fill the values **AAD_CLIENT_ID**, **AAD_SECRET** and **AAD_TENANT_DOMAIN** (see [configuration](#configuration) section), as it's not possible to create an AAD Service Principal using ARM templates.
 
 You can also choose to deploy the function manually. To do that, you must first create an [Azure Function App](https://docs.microsoft.com/en-us/azure/azure-functions/functions-get-started?pivots=programming-language-csharp). You can either :
 
 - Use a **Node 14** runtime and deploy the code using [the Az CLI](https://docs.microsoft.com/fr-fr/cli/azure/functionapp?view=azure-cli-latest#az_functionapp_deploy) , the VS Code extension (CTRL + SHIFT + P -> Deploy to Function App), or creating a new _Application Setting_ (in the _Configuration_ panel) with name `WEBSITE_RUN_FROM_PACKAGE` and value `https://github.com/SoTrx/function-upload-to-blob/releases/latest/download/default.function-upload-to-blob.zip`.
 - Use a **Docker** runtime and then put _dockerutils/function-create-media-job_ in _Container Settings_ once the Function App is created.
+
+Using one of theses methods, you'll have to set every variables listed in the [configuration](#configuration)section.
 
 ## Usage
 
@@ -23,7 +28,7 @@ Be aware that there can only be **one asset per container** (see [workflow](#azu
 
 The same "one asset per container" policy also applies to input assets. This means that trying to execute two parallels instances of this function will fail. The first will run ok, the second will fail because there can't be two assets in the input container.
 
-The workaround used to bypass this limitation is to move the incoming file to a new storage container before turning it to an asset. However, this means that we must be able to move around files in the storage container. This is not something Azure Media Services is capable from the get go, so another library ([@azure/storage-blob](https://www.npmjs.com/package/@azure/storage-blob)) is used for this purpose. This is why an additional storage-account wise connection string must be provided. 
+The workaround used to bypass this limitation is to move the incoming file to a new storage container before turning it to an asset. However, this means that we must be able to move around files in the storage container. This is not something Azure Media Services is capable from the get go, so another library ([@azure/storage-blob](https://www.npmjs.com/package/@azure/storage-blob)) is used for this purpose. This is why an additional storage-account wise connection string must be provided.
 
 ### Azure Media Services workflow
 
@@ -60,7 +65,7 @@ First are the variables needed to access the Azure Media Services API. You can f
 Next are the variables added by the function itself :
 
 - **INPUT_CONTAINER** : The storage account container to watch for new incoming files. Adding a new file to this container will launch a new encoding process.
-- **TRANSFORM_NAME** : The encoding preset name to use to encode the files. If there isn't any preset associated with **TRANSFORM_NAME**, it will be created using the _CONTENTAWAREENCODING_ default preset.
+- **TRANSFORM_NAME** : The encoding preset name to use to encode the files. If there isn't any preset associated with **TRANSFORM_NAME**, it will be created using the __AdaptiveStreaming__ default preset.
 - **NODE_ENV** : Set it to **production**. Any other value would result in the function using a mock instead of Azure Media Services.
 - **ACCOUNT_CONNECTION_STRING** : READ/WRITE/DELETE Access to the whole storage account. You can generate one in the "Shared access signature" section of the Storage account page in the portal. This is needed for the workaround explained [here](#limitation-and-workaround). This tring must begin with `BlobEndpoint=`
 
