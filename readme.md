@@ -3,7 +3,7 @@
 [![codecov](https://codecov.io/gh/SoTrx/function-create-media-job/branch/master/graph/badge.svg?token=I6ZVGPI3BJ)](https://codecov.io/gh/SoTrx/function-create-media-job)
 [![Deploy to Azure](https://img.shields.io/badge/Deploy%20To-Azure-blue?logo=microsoft-azure)](https://portal.azure.com/?WT.mc_id=dotnet-0000-frbouche#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FSoTrx%2Ffunction-create-media-job%2Fmaster%2Fdeploy.json)
 
-This Azure function triggers an encoding task each time a file is added to a specific storage container.
+This Azure function triggers an encoding task each time a file is added to a specific storage container. This function is meant to only start the encoding, and to be used with another function listening for progress/end events of the encoding process.
 
 ## Installation
 
@@ -60,13 +60,13 @@ First are the variables needed to access the Azure Media Services API. You can f
 - **AAD_TENANT_DOMAIN** : -
 - **SUBSCRIPTION_ID** : -
 - **RESOURCE_GROUP** : -
-- **MEDIA_SERVICES_NAME** : Listed as ACCOUNT_NAME on the API access page, renamed to prevent confusion with the storage account. 
+- **MEDIA_SERVICES_NAME** : Listed as ACCOUNT_NAME on the API access page, renamed to prevent confusion with the storage account.
 
 Next are the variables added by the function itself :
 
 - **INPUT_CONTAINER** : The storage account container to watch for new incoming files. Adding a new file to this container will launch a new encoding process.
 - **OUTPUT_CONTAINER_PREFIX** : Prefix for the name of output container to use. The created output container will be named `[OUTPUT_CONTAINER_PREFIX]-[vid]`
-- **TRANSFORM_NAME** : The encoding preset name to use to encode the files. If there isn't any preset associated with **TRANSFORM_NAME**, it will be created using the __AdaptiveStreaming__ default preset.
+- **TRANSFORM_NAME** : The encoding preset name to use to encode the files. If there isn't any preset associated with **TRANSFORM_NAME**, it will be created using the **AdaptiveStreaming** default preset.
 - **NODE_ENV** : Set it to **production**. Any other value would result in the function using a mock instead of Azure Media Services.
 - **ACCOUNT_CONNECTION_STRING** : READ/WRITE/DELETE Access to the whole storage account. You can generate one in the "Shared access signature" section of the Storage account page in the portal. This is needed for the workaround explained [here](#limitation-and-workaround). This string must begin with `BlobEndpoint=`
 
@@ -79,8 +79,8 @@ See [application settings documentation](https://docs.microsoft.com/en-us/azure/
       "name": "myBlob",
       "type": "blobTrigger",
       "direction": "in",
-      "path": "%InputContainer%/{name}",
-      "connection": "videossharingscontainer_STORAGE"
+      "path": "%INPUT_CONTAINER%/{name}",
+      "connection": "STORAGE_CONNECTION_STRING"
     }
   ],
   "scriptFile": "../dist/encode-video/index.js"
