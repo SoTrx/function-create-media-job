@@ -60,14 +60,15 @@ First are the variables needed to access the Azure Media Services API. You can f
 - **AAD_TENANT_DOMAIN** : -
 - **SUBSCRIPTION_ID** : -
 - **RESOURCE_GROUP** : -
-- **ACCOUNT_NAME** : -
+- **MEDIA_SERVICES_NAME** : Listed as ACCOUNT_NAME on the API access page, renamed to prevent confusion with the storage account. 
 
 Next are the variables added by the function itself :
 
 - **INPUT_CONTAINER** : The storage account container to watch for new incoming files. Adding a new file to this container will launch a new encoding process.
+- **OUTPUT_CONTAINER_PREFIX** : Prefix for the name of output container to use. The created output container will be named `[OUTPUT_CONTAINER_PREFIX]-[vid]`
 - **TRANSFORM_NAME** : The encoding preset name to use to encode the files. If there isn't any preset associated with **TRANSFORM_NAME**, it will be created using the __AdaptiveStreaming__ default preset.
 - **NODE_ENV** : Set it to **production**. Any other value would result in the function using a mock instead of Azure Media Services.
-- **ACCOUNT_CONNECTION_STRING** : READ/WRITE/DELETE Access to the whole storage account. You can generate one in the "Shared access signature" section of the Storage account page in the portal. This is needed for the workaround explained [here](#limitation-and-workaround). This tring must begin with `BlobEndpoint=`
+- **ACCOUNT_CONNECTION_STRING** : READ/WRITE/DELETE Access to the whole storage account. You can generate one in the "Shared access signature" section of the Storage account page in the portal. This is needed for the workaround explained [here](#limitation-and-workaround). This string must begin with `BlobEndpoint=`
 
 See [application settings documentation](https://docs.microsoft.com/en-us/azure/azure-functions/functions-how-to-use-azure-function-app-settings#settings) for more details.
 

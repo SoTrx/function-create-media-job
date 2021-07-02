@@ -16,11 +16,18 @@
         "description": "Name of the storage account container to watch for new incoming files"
       }
     },
+    "OutputContainerPrefix": {
+      "type": "string",
+      "defaultValue": "vid",
+      "metadata": {
+        "description": "Prefix of the name to name each output container."
+      }
+    },
     "TransformName": {
       "type": "string",
       "defaultValue": "default",
       "metadata": {
-        "description": "Name of the azure media services transform to use"
+        "description": "Name of the azure media services transform to use. 'Default' is created by this template, any other transform would have to be created manually"
       }
     }
   },
@@ -86,7 +93,11 @@
               "value": "FILL_THIS_VALUE"
             },
             {
-              "name": "AAD_SUBSCRIPTION_ID",
+              "name": "OUTPUT_CONTAINER_PREFIX",
+              "value": "[parameters('OutputContainerPrefix')]"
+            },
+            {
+              "name": "SUBSCRIPTION_ID",
               "value": "[subscription().subscriptionId]"
             },
             {
@@ -94,8 +105,8 @@
               "value": "[resourceGroup().name]"
             },
             {
-              "name": "ACCOUNT_NAME",
-              "value": "[variables('funcStorageAccountName')]"
+              "name": "MEDIA_SERVICES_NAME",
+              "value": "[variables('funcMediaServicesName')]"
             },
             {
               "name": "INPUT_CONTAINER",
@@ -110,7 +121,7 @@
               "value": "production"
             },
             {
-              "name": "ACCOUNT_CONNECTION_STRING",
+              "name": "STORAGE_CONNECTION_STRING",
               "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('funcStorageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts',variables('funcStorageAccountName')), '2019-06-01').keys[0].value,';EndpointSuffix=','core.windows.net')]"
             },
             {
@@ -190,7 +201,7 @@
         {
           "name": "default",
           "type": "transforms",
-          "dependsOn" : [
+          "dependsOn": [
             "[concat('Microsoft.Media/mediaservices/',variables('funcMediaServicesName'))]"
           ],
           "apiVersion": "2018-07-01",

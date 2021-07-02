@@ -42,10 +42,10 @@ export default async function blobTrigger(
       "AAD_TENANT_DOMAIN",
       "SUBSCRIPTION_ID",
       "RESOURCE_GROUP",
-      "ACCOUNT_NAME",
+      "MEDIA_SERVICES_NAME",
       "INPUT_CONTAINER",
       "TRANSFORM_NAME",
-      "ACCOUNT_CONNECTION_STRING",
+      "STORAGE_CONNECTION_STRING",
     ].map((env) => getEnvVar<string>(env, context));
 
     // As there is no true "root" for our DI, we can allow a bit of a service locator anti-pattern.
@@ -73,7 +73,7 @@ export default async function blobTrigger(
     );
 
     const uuid = uuidv4();
-    const outputContainer = `${env.OUTPUT_CONTAINER}-${uuid}`;
+    const outputContainer = `${env.OUTPUT_CONTAINER_PREFIX}-${uuid}`;
     const outputAssetName = `${context.bindingData.name}-${uuid}`;
     const jobName = `job-${uuid}`;
     // Set the target in another container.

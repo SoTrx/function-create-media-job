@@ -5,7 +5,7 @@
       "type": "blobTrigger",
       "direction": "in",
       "path": "%INPUT_CONTAINER%/{name}",
-      "connection": "videossharingscontainer_STORAGE"
+      "connection": "STORAGE_CONNECTION_STRING"
     }
   ],
   "scriptFile": "../dist/encode-video/index.js"
